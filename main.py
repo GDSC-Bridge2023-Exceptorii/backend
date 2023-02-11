@@ -14,6 +14,8 @@ from ML.ocr import detect_text, translate, summarize
 import shutil
 from pathlib import Path
 serviceaccountkeys = os.environ.get('SERVICEACCOUNTKEYS')
+from news.fetch_news import NewsRequest, fetch_news
+import json
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -21,24 +23,6 @@ SECRET_KEY = "1ca41e02f535fd037babb6c4971a60cd27830ea9aec390a5dc0f2c366133aee1"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 300
 
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "$2b$12$QKm1f5EguLRghY6Kh2yW6OELHwoIIQ45Fe8pPgq3N4xrIzonZ3OWW", #fakehashedsecret
-        "disabled": False,
-        "id": 1,
-        "is_active": True,
-    },
-    "alice": {
-        "username": "alice",
-        "full_name": "Alice Wonderson",
-        "email": "alice@example.com",
-        "hashed_password": "fakehashedsecret2",
-        "disabled": True,
-    },
-}
 
 
 app = FastAPI()
@@ -62,13 +46,6 @@ def get_user(db, username: str):
         return schemas.UserInDB(**user_dict)
 
 
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
-    if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user
 
 
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
@@ -83,6 +60,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
+    db = get_db()
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -96,7 +74,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = schemas.TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
+    user = crud.get_user(db, user_id=token_data.username)
     if user is None:
         raise credentials_exception
     return user
@@ -110,7 +88,8 @@ async def get_current_active_user(current_user: schemas.User = Depends(get_curre
 
 @app.post("/token", response_model=schemas.Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    db = get_db()
+    user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -133,6 +112,25 @@ async def read_users_me(current_user: schemas.User = Depends(get_current_active_
 async def read_own_items(current_user: schemas.User = Depends(get_current_active_user)):
     return [{"item_id": "Foo", "owner": current_user.username}]
 
+@app.post("/users/register")
+async def register_user(user: schemas.UserCreate):
+    hashed_password = get_password_hash(user.password)
+    user.password = hashed_password
+    user = crud.create_user(db=SessionLocal(), user=user)
+    return user
+
+def authenticate_user(email: str, password: str):
+    db = SessionLocal()
+    user = crud.get_user_by_email(db, email=email)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user
+
+
+
+
 
 # Dependency
 def get_db():
@@ -147,22 +145,21 @@ def read_root(token: str = Depends(oauth2_scheme)):
     return {"token": token}
 
 
-def fake_decode_token(token):
-    return schemas.User(
-        username=token + "fakedecoded", email="john@example.com", full_name="John Doe"
-    )
+@app.get("/translate-to-en")
+async def translate_to_en(text: str):
+    return {"translated_text": translate(text, "en")}
 
+@app.get("/translate-to-ja")
+async def translate_to_ja(text: str):
+    return {"translated_text": translate(text, "ja")}
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    user = fake_decode_token(token)
-    return user
+@app.get("/translate-to-kr")
+async def translate_to_kr(text: str):
+    return {"translated_text": translate(text, "kr")}
 
 
 @app.post("/images-OCR/")
 async def image_ocr(file: UploadFile = File(...)):
-    # python: how to read a file from a POST request in fastapi?
-    # https://stackoverflow.com/questions/62688256/python-how-to-read-a-file-from-a-post-request-in-fastapi
-    # https://fastapi.tiangolo.com/tutorial/request-files/
     file_location = f"files/{file.filename}"
     with open(file_location, "wb+") as file_object:
         file_object.write(file.file.read())
@@ -170,8 +167,13 @@ async def image_ocr(file: UploadFile = File(...)):
     text = detect_text(file_location)
     text_translated, lang = translate(text, "en")
     summary = summarize(text_translated)
-    text_original = translate(text, lang)
+    text_original = translate(summary, lang)
     return {"text": text_original, "summary": summary}
+
+@app.post("/fetch-news")
+async def fetch_news_api(news_req: NewsRequest) -> list[str]:
+    titles = fetch_news(news_req)
+    return titles
 
 
 # ML models
