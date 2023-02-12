@@ -1,0 +1,60 @@
+anyio @ file:///home/conda/feedstock_root/build_artifacts/anyio_1666191106763/work/dist
+bcrypt==4.0.1
+cachetools==5.3.0
+certifi==2022.12.7
+cffi==1.15.1
+charset-normalizer==3.0.1
+click==8.1.3
+cryptography==39.0.1
+ecdsa==0.18.0
+fastapi @ file:///home/conda/feedstock_root/build_artifacts/fastapi_1676052137167/work
+feedparser==6.0.10
+filelock==3.9.0
+fuzzywuzzy==0.18.0
+gnewsclient==1.12
+google-api-core==2.11.0
+google-auth==2.16.0
+google-cloud-core==2.3.2
+google-cloud-translate==3.10.1
+google-cloud-vision==3.3.1
+googleapis-common-protos==1.58.0
+greenlet==2.0.2
+grpcio==1.51.1
+grpcio-status==1.51.1
+h11==0.14.0
+huggingface-hub==0.12.0
+idna @ file:///home/conda/feedstock_root/build_artifacts/idna_1663625384323/work
+numpy==1.24.2
+nvidia-cublas-cu11==11.10.3.66
+nvidia-cuda-nvrtc-cu11==11.7.99
+nvidia-cuda-runtime-cu11==11.7.99
+nvidia-cudnn-cu11==8.5.0.96
+packaging==23.0
+pandas==1.5.3
+passlib==1.7.4
+proto-plus==1.22.2
+protobuf==4.21.12
+pyasn1==0.4.8
+pyasn1-modules==0.2.8
+pycparser==2.21
+pydantic @ file:///home/conda/feedstock_root/build_artifacts/pydantic_1673305623896/work
+python-dateutil==2.8.2
+python-jose==3.3.0
+python-multipart==0.0.5
+pytz==2022.7.1
+PyYAML==6.0
+regex==2022.10.31
+requests==2.28.2
+rsa==4.9
+sgmllib3k==1.0.0
+six==1.16.0
+sniffio @ file:///home/conda/feedstock_root/build_artifacts/sniffio_1662051266223/work
+SQLAlchemy==2.0.3
+starlette @ file:///home/conda/feedstock_root/build_artifacts/starlette-recipe_1675718657463/work
+tokenizers==0.13.2
+torch==1.13.1
+tqdm==4.64.1
+transformers==4.26.1
+typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/typing_extensions_1665144421445/work
+urllib3==1.26.14
+uvicorn==0.20.0
